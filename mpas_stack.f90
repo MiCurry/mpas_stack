@@ -194,15 +194,14 @@ module mpas_stack
    !
    !  function mpas_stack_free
    !
-   !> \brief   Deallocate the entire stack
+   !> \brief   Deallocate the entire stack. Optionally deallocate payloads
    !> \author  Miles A. Curry 
    !> \date    04/04/19
    !> \details
-   !> Pop off the top of the stack as a payload_t type. Note, that to return
-   !> top to a user defined type, a 'select type' statment will need to be
-   !> used. See the top of this module for an explanation, or the bottom of
-   !> this module for an example function.
-   !
+   !>  Deallocate the entire stack. If free_payload is set to `.TRUE.` or absent
+   !>  then the payload will be deallocated. If not, then the payload will not
+   !>  be deallocated.
+   !  
    !-----------------------------------------------------------------------
    subroutine mpas_stack_free(stack, free_payload)
 
@@ -238,7 +237,7 @@ module mpas_stack
    !  Example user-defined pop function
    !
    !> \brief   Pop off the last item added from a stack and return it as our 
-   !> defined type
+   !>          defined type
    !> \author  Miles A. Curry 
    !> \date    04/04/19
    !> 
