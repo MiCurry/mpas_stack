@@ -273,7 +273,5 @@ module mpas_stack
    !          stop
    !    end select
 
-
-
 end module mpas_stack
 

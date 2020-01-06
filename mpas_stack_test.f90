@@ -19,6 +19,8 @@ program mpas_stack_test
    integer :: i, j
    integer :: ierr
 
+   write(0,*) "STARTING THE PROGRAM"
+
    allocate(item1)
    item1 % my_num = 1
 
@@ -77,7 +79,7 @@ program mpas_stack_test
    stack2 => mpas_stack_push(stack2, item1)
    stack2 => mpas_stack_push(stack2, item2)
 
-   i = 1 ! Set i to zero
+   i = 1
    do while(.NOT. mpas_stack_is_empty(stack1))
       item => my_pop(stack1)
 
@@ -105,7 +107,7 @@ program mpas_stack_test
          item % bool_flag = .TRUE.
       endif
 
-      i = i + 1 ! Increment by one
+      i = i + 1
       write(0,*) ""
    enddo
 
@@ -181,7 +183,7 @@ program mpas_stack_test
    int_check_array1(7) = 6
    int_check_array1(8) = 2
 
-   i = 1 ! Set i to zero
+   i = 1
    do while(.NOT. mpas_stack_is_empty(stack1))
       item => my_pop(stack1)
 
@@ -196,7 +198,7 @@ program mpas_stack_test
          write(0,*) "Got: ", item % my_num, "Wanted: ", int_check_array1(i)
       endif
 
-      i = i + 1 ! Increment by one
+      i = i + 1
       write(0,*) ""
    enddo
 
@@ -211,10 +213,8 @@ program mpas_stack_test
       stop
    endif
 
-
    deallocate(item1); deallocate(item2); deallocate(item3);deallocate(item4)
    deallocate(item5); deallocate(item6);
-
 
    ! Testing mpas_stack_free
    write(0,*) ""
@@ -245,8 +245,6 @@ program mpas_stack_test
       enddo
       write(0,*) "The stack had ", j, " items still allocataded!"
    endif
-  
-
 
    write(0,*) ""
    write(0,*) "Testing mpas_stack_free without freeing the payloads"
