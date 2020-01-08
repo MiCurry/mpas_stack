@@ -176,6 +176,7 @@ module mpas_stack
       implicit none
 
       type (node), intent(inout), pointer :: stack
+      type (node), pointer :: next => null()
       class(payload_t), pointer :: top
 
       if ( .NOT. associated(stack)) then
@@ -185,7 +186,9 @@ module mpas_stack
       endif
 
       top => stack % payload
-      stack => stack % next
+      next => stack % next
+      deallocate(stack)
+      stack => next
       return
 
    end function mpas_stack_pop
