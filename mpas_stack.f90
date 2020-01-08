@@ -106,7 +106,6 @@ module mpas_stack
    !> \brief   Returns .TRUE. if the stack is empty, otherwise .FALSE.
    !> \author  Miles A. Curry 
    !> \date    04/04/19
-   !>
    !
    !-----------------------------------------------------------------------
    function mpas_stack_is_empty(stack) result(is_empty)
@@ -133,9 +132,9 @@ module mpas_stack
    !> \date    04/04/19
    !> \details
    !>
-   !> Push a defined type that extends the payload_t type onto the specified
-   !> stack.
-   !>
+   !> Push a payload_t type, `payload`, onto `stack` and return the new stack.
+   !> If `payload` is the first item to be pushed onto the stack, then `stack`
+   !> should be unassociated.
    !
    !-----------------------------------------------------------------------
    function mpas_stack_push(stack, payload) result(new_stack)
@@ -161,14 +160,12 @@ module mpas_stack
    !
    !  function mpas_stack_pop
    !
-   !> \brief   Pop off the last item added from a stack 
+   !> \brief   Pop off the last item added from a stack
    !> \author  Miles A. Curry 
    !> \date    04/04/19
    !> \details
-   !> Pop off the top of the stack as a payload_t type. Note, that to return
-   !> top to a user defined type, a 'select type' statment will need to be
-   !> used. See the top of this module for an explanation, or the bottom of
-   !> this module for an example function.
+   !> Pop off and return the top item of the stack as a `class payload_t`.
+   !> If the stack is empty, then the returned an unassociated `class payload_t`.
    !
    !-----------------------------------------------------------------------
    function mpas_stack_pop(stack) result(top)
@@ -200,8 +197,8 @@ module mpas_stack
    !> \author  Miles A. Curry 
    !> \date    04/04/19
    !> \details
-   !>  Deallocate the entire stack. If free_payload is set to `.TRUE.` or absent
-   !>  then the payload will be deallocated. If not, then the payload will not
+   !>  Deallocate the entire stack. If free_payload is set to `.TRUE.` or if
+   !>  absent then the payload will be deallocated. If not, then the payload will not
    !>  be deallocated.
    !  
    !-----------------------------------------------------------------------
@@ -261,7 +258,7 @@ module mpas_stack
    !    ! Note the stack will return null if it is empty.
    !    !
    !    if (mpas_stack_is_empty(stack)) then
-   !       write(0,*) "The stack was empty!"
+   !       item => null()
    !       return
    !    endif
    ! 
