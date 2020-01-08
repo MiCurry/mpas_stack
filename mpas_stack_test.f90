@@ -1,7 +1,7 @@
 program mpas_stack_test
 
-   use mpas_stack, only : node, payload_t, mpas_stack_push, mpas_stack_is_empty
-   use mpas_stack, only : mpas_stack_free
+   use mpas_stack, only : node, payload_t
+   use mpas_stack, only : mpas_stack_push, mpas_stack_pop, mpas_stack_is_empty, mpas_stack_free
 
    implicit none
 
@@ -10,310 +10,230 @@ program mpas_stack_test
       logical :: bool_flag = .FALSE.
    end type my_item
 
-   type(node), pointer :: stack1, stack2, stack_cur
-   class(my_item), pointer :: item1, item2, item3, item4, item5, item6
+   type(node), pointer :: stack1 => null()
+   class(my_item), pointer :: item1, item2
+   class(my_item), dimension(:), pointer :: items
    class(my_item), pointer :: item
+   class(payload_t), pointer :: top
 
-   logical, dimension(10) :: bool_check_array1, bool_check_array2
-   integer, dimension(10) :: int_check_array1, int_check_array2
-   integer :: i, j
+   logical, dimension(:), pointer :: bool_check_array
+   integer, dimension(:), pointer :: int_check_array
+   integer :: i, j, n
    integer :: ierr
 
-   write(0,*) "STARTING THE PROGRAM"
+   write(0,*) "Testing mpas_stack"
 
+   !
+   ! Test that an empty stack is empty
+   !
+   if (.not. mpas_stack_is_empty(stack1)) then
+      write(0,*) "FAILED: Empty stack reported to be non-empty"
+   endif
+
+   !
+   ! Add a single element to the stack
+   !
    allocate(item1)
    item1 % my_num = 1
+   item1 % bool_flag = .True.
+   stack1 => mpas_stack_push(stack1, item1)
+
+   ! Check to see that the stack is no longer empty
+   if (mpas_stack_is_empty(stack1)) then
+      write(0,*) "FAILED: Stack reported as empty but should contain an element"
+   endif
+
+   ! Remove the single element from the stack
+   item => my_pop(stack1)
+   if (item % my_num /= 1 .and. item % bool_flag) then
+      write(0,*) "FAILED: Item popped from the stack was not correct"
+      write(0,*) "FAILED: element my_num was : ", item % my_num, " and bool was: ", item % bool_flag
+      write(0,*) "FAILED: where they should have been: 1, and .True."
+   endif
+
+   ! Free the empty stack
+   call mpas_stack_free(stack1, .True.)
+   if (associated(stack1)) then
+      write(0,*) "FAILED: Stack was associated when it should have been unassociated!"
+   endif
+
+   deallocate(item1)
+
+   ! Call pop on an empty stack
+   top => mpas_stack_pop(stack1)
+   if (associated(top)) then
+      write(0,*) "FAILED: Top was associated, when it should have been NULL"
+   endif
+
+   ! Check to see if the stack is empty
+   if (.not. mpas_stack_is_empty(stack1)) then
+      write(0,*) "FAILED: Stack was not empty when it should have been"
+   endif
+
+
+   !
+   ! Pass in 2 elements to the stack and ensure they pop off in FILO order 
+   !
+   allocate(item1)
+   allocate(item2)
+
+   item1 % my_num = 1
+   item1 % bool_flag = .True.
+
+   item2 % my_num = 2
+   item2 % bool_flag = .False.
 
    stack1 => mpas_stack_push(stack1, item1)
-   item => my_pop(stack1)
-
-   write(0,*) ""
-   write(0,*) "Testing a single item. Pushing it on the stack, and then off the stack"
-   write(0,*) "And insuring the stack reports that it is empty"
-   write(0,*) ""
-
-   if ( item % my_num /= item1 % my_num ) then
-      write(0,*) "This was not the number we expected for item1!"
-      write(0,*) "Got: ", item % my_num, "Wanted: ", item1 % my_num
-      stop
-   else if ( item % bool_flag .NEQV. item1 % bool_flag ) then
-      write(0,*) "This was not the boolean we expected for item 1!"
-      write(0,*) "Got: ", item % bool_flag, "Wanted: ", item1 % bool_flag 
-      stop
-   else if(.not. mpas_stack_is_empty(stack1)) then
-      write(0,*) "The stack said it was not empty, but it should have been!"
-      stop
-   else
-      write(0,*) "First test successfull"
+   if (mpas_stack_is_empty(stack1)) then
+      write(0,*) "FAILED: Stack reported empty after pushing item1 onto stack1"
    endif
+
+   stack1 => mpas_stack_push(stack1, item2)
+   if (mpas_stack_is_empty(stack1)) then
+      write(0,*) "FAILED: Stack reported empty after pushing item1 onto stack1"
+   endif
+
+   ! Pop off an item and ensure that its item2
+   item => my_pop(stack1)
+   if (item % my_num /= 2 .and. .not. item % bool_flag) then
+      write(0,*) "FAILED: Item popped from the stack was not correct"
+      write(0,*) "FAILED: element my_num was : ", item % my_num, " and bool was: ", item % bool_flag
+      write(0,*) "FAILED: where they should have been: 2, and .False."
+   endif
+
+   ! Pop off an item and ensure that its item1
+   item => my_pop(stack1)
+   if (item % my_num /= 1 .and. item % bool_flag) then
+      write(0,*) "FAILED: Item popped from the stack was not correct"
+      write(0,*) "FAILED: element my_num was : ", item % my_num, " and bool was: ", item % bool_flag
+      write(0,*) "FAILED: where they should have been: 1, and .True."
+   endif
+
+   deallocate(item1)
+   deallocate(item2)
+
+   ! Check to see the stack is empty
+   if (.not. mpas_stack_is_empty(stack1)) then
+      write(0,*) "FAILED: Stack reported not empty when it should have been empty"
+   endif
+
+   ! Free the empty stack
+   call mpas_stack_free(stack1, .True.)
+   if (associated(stack1)) then
+      write(0,*) "FAILED: Stack was associated when it should have been unassociated!"
+   endif
+
+
+   !
+   ! Check mpas_stack_free to see if it deallocates everything
+   !
+   allocate(item1)
+   allocate(item2)
+   item1 % my_num = 1
+   item2 % my_num = 2
+
+   stack1 => mpas_stack_push(stack1, item1)
+   stack1 => mpas_stack_push(stack1, item2)
+
+   ! Free the stack and check to see if its associated
+   call mpas_stack_free(stack1)
+   if (associated(stack1)) then
+      write(0,*) "FAILED: Stack1 was not freed successfully"
+   endif
+
+   ! Check to see if item1 and item2 are associated
+   ! item1 and item2 are successfully deallocated after calling mpas_stack_free; however,
+   ! item1 and item2 are still *associated*. Should this be the correct behavior? Or should
+   ! the stack do something different?
+   if (associated(item1)) then
+      write(0,*) "FAILED: Item1 was associated when it should have been unassociated"
+   endif
+
+   if (associated(item2)) then
+      write(0,*) "FAILED: Item2 was associated when it should have been unassociated"
+   endif
+
+   item1 => null()
+   item2 => null()
+
+   !
+   ! Pushing three items, and pushing the same item twice
+   !
+   allocate(item1)
+   item1 % my_num = 1
+   item1 % bool_flag = .True.
 
    allocate(item2)
    item2 % my_num = 2
-
-   allocate(item3)
-   item3 % my_num = 3
-
-   allocate(item4)
-   item4 % my_num = 4
-   item4 % bool_flag = .True.
-
-   allocate(item5)
-   item5 % my_num = 5
-   item4 % bool_flag = .True.
-
-   allocate(item6)
-   item6 % my_num = 6
-
-   write(0,*) ""
-   write(0,*) "Pushing multiple values onto stack1 and insuring they are correct values"
-   write(0,*) ""
+   item2 % bool_flag = .False.
 
    stack1 => mpas_stack_push(stack1, item1)
    stack1 => mpas_stack_push(stack1, item2)
-
-   int_check_array1(1) = 2
-   int_check_array1(2) = 1
-   bool_check_array1(1) = .FALSE.
-   bool_check_array1(2) = .FALSE.
-    
-   stack2 => mpas_stack_push(stack2, item1)
-   stack2 => mpas_stack_push(stack2, item2)
-
-   i = 1
-   do while(.NOT. mpas_stack_is_empty(stack1))
-      item => my_pop(stack1)
-
-      ! Check to see if the integers are in the correct order
-      if (item % my_num /= int_check_array1(i)) then
-         write(0,*) "Test ", i, " Failed! "
-         write(0,*) "This item did not match what was expected!"
-         write(0,*) "Got: ", item % my_num, "Wanted: ", int_check_array1(i)
-         stop
-      else
-         write(0,*) "Test ", i, " Correct! "
-         write(0,*) "Got: ", item % my_num, "Wanted: ", int_check_array1(i)
-      endif
-      write(0,*) ""
-
-      ! Check to see if the bool flag are in the correct order 
-      if (item % bool_flag .NEQV. bool_check_array1(i)) then
-         write(0,*) "Test ", i, " Failed! "
-         write(0,*) "This item did not match what was expected!"
-         write(0,*) "Got: ", item % bool_flag, "Wanted: ", bool_check_array1(i)
-         stop
-      else
-         write(0,*) "Test ", i, " CORRECT! "
-         write(0,*) "Got: ", item % bool_flag, "Wanted: ", bool_check_array1(i)
-         item % bool_flag = .TRUE.
-      endif
-
-      i = i + 1
-      write(0,*) ""
-   enddo
-
-
-   write(0,*) ""
-   write(0,*) "Now testing the second stack to see if the values of the payloads have changed"
-
-   bool_check_array1(1) = .TRUE.
-   bool_check_array1(2) = .TRUE.
-
-   ! Check the second stack
-   i = 1 ! Set i to zero
-   do while(.NOT. mpas_stack_is_empty(stack2))
-      item => my_pop(stack2)
-
-      ! Check to see if the integers are in the correct order
-      if (item % my_num /= int_check_array1(i)) then
-         write(0,*) "Test ", i, " Failed! "
-         write(0,*) "This item did not match what was expected!"
-         write(0,*) "Got: ", item % my_num, "Wanted: ", int_check_array1(i)
-         stop
-      else
-         write(0,*) "Test ", i, " Correct! "
-         write(0,*) "Got: ", item % my_num, "Wanted: ", int_check_array1(i)
-      endif
-      write(0,*) ""
-
-      ! Check to see if the bool flag are in the correct order 
-      if (item % bool_flag .NEQV. bool_check_array1(i)) then
-         write(0,*) "Test ", i, " Failed! "
-         write(0,*) "This item did not match what was expected!"
-         write(0,*) "Got: ", item % bool_flag, "Wanted: ", bool_check_array1(i)
-         stop
-      else
-         write(0,*) "Test ", i, " CORRECT! "
-         write(0,*) "Got: ", item % bool_flag, "Wanted: ", bool_check_array1(i)
-         item % bool_flag = .TRUE.
-      endif
-
-      i = i + 1 ! Increment by one
-      write(0,*) ""
-   enddo
-
-   !
-   !
-   !
-   !
-
-   write(0,*) ""
-   write(0,*) "Now pushing in a bunch of values, plus pushing some items twice!"
-
-   stack1 => mpas_stack_push(stack1, item2)
-   stack1 => mpas_stack_push(stack1, item6)
-
-   stack1 => mpas_stack_push(stack1, item6)
    stack1 => mpas_stack_push(stack1, item1)
 
-   stack1 => mpas_stack_push(stack1, item2)
-   stack1 => mpas_stack_push(stack1, item3)
-
-   stack1 => mpas_stack_push(stack1, item3)
-   stack1 => mpas_stack_push(stack1, item4)
-
-   int_check_array1(1) = 4
-   int_check_array1(2) = 3
-
-   int_check_array1(3) = 3
-   int_check_array1(4) = 2
-
-   int_check_array1(5) = 1
-   int_check_array1(6) = 6
-
-   int_check_array1(7) = 6
-   int_check_array1(8) = 2
-
-   i = 1
-   do while(.NOT. mpas_stack_is_empty(stack1))
-      item => my_pop(stack1)
-
-      ! Check to see if the integers are in the correct order
-      if (item % my_num /= int_check_array1(i)) then
-         write(0,*) "Test ", i, " Failed! "
-         write(0,*) "This item did not match what was expected!"
-         write(0,*) "Got: ", item % my_num, "Wanted: ", int_check_array1(i)
-         stop
-      else
-         write(0,*) "Test ", i, " Correct! "
-         write(0,*) "Got: ", item % my_num, "Wanted: ", int_check_array1(i)
-      endif
-
-      i = i + 1
-      write(0,*) ""
-   enddo
-
-
-   ! Should produce 'The stack was emtpy' per our my_pop funciton
-   write(0,*) "Testing poping and empty stack. Should produce 'the stack was emtpy'"
-   write(0,*) "Which we specified in our `my_pop` function"
-   write(0,*) ""
    item => my_pop(stack1)
-   if(associated(item)) then
-      write(0,*) "The item should not have been associated!"
-      stop
+   if (item % my_num /= 1 .and. .not. item % bool_flag) then
+      write(0,*) "FAILED: Item popped from the stack was not correct"
+      write(0,*) "FAILED: element my_num was : ", item % my_num, " and bool was: ", item % bool_flag
+      write(0,*) "FAILED: where they should have been: 1, and .True."
    endif
 
-   deallocate(item1); deallocate(item2); deallocate(item3);deallocate(item4)
-   deallocate(item5); deallocate(item6);
+   item => my_pop(stack1)
+   if (item % my_num /= 2 .and. item % bool_flag) then
+      write(0,*) "FAILED: Item popped from the stack was not correct"
+      write(0,*) "FAILED: element my_num was : ", item % my_num, " and bool was: ", item % bool_flag
+      write(0,*) "FAILED: where they should have been: 2, and .False."
+   endif
 
-   ! Testing mpas_stack_free
-   write(0,*) ""
-   write(0,*) "Testing mpas_stack_free!"
+   item => my_pop(stack1)
+   if (item % my_num /= 1 .and. .not. item % bool_flag) then
+      write(0,*) "FAILED: Item popped from the stack was not correct"
+      write(0,*) "FAILED: element my_num was : ", item % my_num, " and bool was: ", item % bool_flag
+      write(0,*) "FAILED: where they should have been: 1, and .True."
+   endif
 
-   do i = 1, 20, 1
-      allocate(item1)   
-      item1 % my_num = i
-      stack1 => mpas_stack_push(stack1, item1)
+   ! Free the stack
+   call mpas_stack_free(stack1)
+   if (associated(stack1)) then
+      write(0,*) "FAILED: Stack was associated when it should have been unassociated!"
+   endif
+
+   deallocate(item1)
+   deallocate(item2)
+
+   !
+   ! Testing with a large amounts of elements
+   !
+   n = 10000000
+   write(0,*) "Inserting a large amount of elements: ", n
+   allocate(items(n))
+   allocate(int_check_array(n))
+   do i = 1, n
+      items(i) % my_num = i
+      int_check_array(i) = i
+      stack1 => mpas_stack_push(stack1, items(i))
    enddo
 
-   call mpas_stack_free(stack1, free_payload=.TRUE.)
-   write(0,*) "The stack was freed!"
+   write(0,*) "Popping a large amount of elements: ", n
+   do i = 1, n
+      item => my_pop(stack1)
+      if (item % my_num /= int_check_array(n-i+1)) then
+         write(0,*) "FAILED: Item popped from the stack was not correct"
+         write(0,*) "FAILED: element my_num was : ", item % my_num
+         write(0,*) "FAILED: where they should have been: ", int_check_array(n-i+1)
+      endif
+   enddo
 
-   if (mpas_stack_is_empty(stack1)) then
-      write(0,*) "The stack says that is was is empty"
-   else
-      write(0,*) "The stack was not freed succesfully"
-      stack_cur => stack1
-      j = 0
-      do while(associated(stack_cur))
-         j = j + 1
-         if (associated(stack_cur % next)) then
-            stack_cur => stack_cur % next
-         else
-            exit
-         endif
-      enddo
-      write(0,*) "The stack had ", j, " items still allocataded!"
+   ! Free the stack
+   call mpas_stack_free(stack1)
+   if (associated(stack1)) then
+      write(0,*) "FAILED: Stack was associated when it should have been unassociated!"
    endif
 
-   write(0,*) ""
-   write(0,*) "Testing mpas_stack_free without freeing the payloads"
-   allocate(item1)
-   item1 % my_num = 1
-   stack1 => mpas_stack_push(stack1, item1)
-   allocate(item2)
-   item2 % my_num = 2
-   stack1 => mpas_stack_push(stack1, item2)
-   allocate(item3)
-   item3 % my_num = 3
-   stack1 => mpas_stack_push(stack1, item3)
-   allocate(item4)
-   item4 % my_num = 4
-   stack1 => mpas_stack_push(stack1, item4)
+   deallocate(items)
+   deallocate(int_check_array)
 
-   call mpas_stack_free(stack1, free_payload=.FALSE.)
-   if (mpas_stack_is_empty(stack1)) then
-
-      write(0,*) "Stack Freed, but not the payloads...Checking if the payloads exist..."
-
-      if ( .NOT. associated(item1)) then 
-         write(0,*) "FAILED! Item1 was not associated!" 
-         stop
-      else
-         write(0,*) "Item1: ", associated(item1), item1 % my_num
-      endif
-
-      if ( .NOT. associated(item2)) then 
-         write(0,*) "FAILED! Item2 was not associated!" 
-         stop
-      else
-         write(0,*) "Item2: ", associated(item2), item2 % my_num
-      endif
-
-      if ( .NOT. associated(item3)) then 
-         write(0,*) "FAILED! Item3 was not associated!" 
-         stop
-      else
-         write(0,*) "Item3: ", associated(item3), item3 % my_num
-      endif
-
-      if ( .NOT. associated(item3)) then 
-         write(0,*) "FAILED! Item3 was not associated!" 
-         stop
-      else
-         write(0,*) "Item3: ", associated(item3), item3 % my_num
-      endif
-
-   else
-      write(0,*) "FAILED! The stack was not freed succsfully!"
-      stack_cur => stack1
-      j = 0
-      do while(associated(stack_cur))
-         j = j + 1
-         if (associated(stack_cur % next)) then
-            stack_cur => stack_cur % next
-         else
-            exit
-         endif
-      enddo
-      write(0,*) "The stack had ", j, " items still allocataded!"
-      write(0,*) "Stopping..."
-      stop
-   endif
-
-   deallocate(item1); deallocate(item2); deallocate(item3); deallocate(item4)
-
-   write(0,*) "ALL TESTS COMPLETE"
+   write(0,*) "Tests complete"
 
    contains
 
@@ -331,7 +251,7 @@ program mpas_stack_test
 
       item => null()
       if (mpas_stack_is_empty(stack)) then
-         write(0,*) "The stack was empty!"
+         item=>null()
          return
       endif
    
@@ -346,4 +266,5 @@ program mpas_stack_test
       end select
 
    end function my_pop
+
 end program mpas_stack_test
