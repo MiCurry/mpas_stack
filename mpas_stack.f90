@@ -180,7 +180,6 @@ module mpas_stack
       class(payload_t), pointer :: top
 
       if ( .NOT. associated(stack)) then
-         write(0,*) "I returned here :("
          top => null()
          return
       endif
