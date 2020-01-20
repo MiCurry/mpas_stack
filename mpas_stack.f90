@@ -32,8 +32,8 @@ module mpas_stack
    !> Introduction
    !> ==============
    !> The MPAS stack is a simple, extensible data stack data structure for use
-   !> within the MPAS atmospheric model. It functions as a wrapper around a 
-   !> data structure to provide usage in different areas.
+   !> within the MPAS atmospheric model. It functions as a wrapper around a
+   !> polymorphic data structure to provide usage in different areas.
    !>
    !>
    !> Creating a Stack
@@ -41,20 +41,20 @@ module mpas_stack
    !> The stack data structure (`type (node)`) is defined by a single `next` pointer
    !> and a pointer to a `type (payload_t)`, which is defined as a empty derived type.
    !>
-   !> To use the stack, create a derived type to fit your usage, this may be a point 
-   !> (x, y, z) a string or a more complicated object with multiple variables of 
-   !> different types within it. Define the class as the following:
+   !> To use the stack, create a derived that extends the `payload_t` type.  Define your
+   !> extended derived type with members that meets your application.
    !>
+   !> For instance:
    !> ```
    !> type, extends(payload_t) :: my_payload_name
-   !>    ! Define your type as you wish
+   !>    ! Define the members of your type as you wish
    !> end type my_payload_name
    !>
    !> type (my_payload_name) :: item1, item2
    !> ```
    !>
-   !> This will enable your type to ride along with the stack. It will also enable
-   !> you to push the same payload twice (if need-be).
+   !> The extended payload_t define type will enable it to ride along with the stack.
+   !> It will also enable you to push the same payload twice (if need-be).
    !>
    !> You will then need to create a stack (or multiple stacks if you desire) as
    !> the following:
@@ -76,9 +76,7 @@ module mpas_stack
    !> Popping an item off of the stack will require a bit more work then pushing.
    !> Because we've done some fancy Fortran class polymorphism, we will need to 
    !> use the select case to get our type (or multiple types) back into a usable
-   !> object.
-   !> 
-   !> 
+   !> object:
    !> ```
    !> ! The item to pop items into
    !> class (payload_t), pointer :: top
@@ -91,7 +89,7 @@ module mpas_stack
    !> end  select
    !> ```
    !> 
-   !> Note: It is recommended to create your own `pop` function so you can limit 
+   !> Note: It is recommended to create your own `pop` function so you can limit
    !> reduce the amount of coded needed. An example is provided at the bottom of
    !> this module as the function `my_pop(..)`
    !
@@ -106,6 +104,7 @@ module mpas_stack
    !> \brief   Returns .TRUE. if the stack is empty, otherwise .FALSE.
    !> \author  Miles A. Curry 
    !> \date    04/04/19
+   !> Returns .true. If the stack is empty and/or if the stack is unassociated.
    !
    !-----------------------------------------------------------------------
    function mpas_stack_is_empty(stack) result(is_empty)
@@ -132,8 +131,8 @@ module mpas_stack
    !> \date    04/04/19
    !> \details
    !>
-   !> Push a payload_t type, `payload`, onto `stack` and return the new stack.
-   !> If `payload` is the first item to be pushed onto the stack, then `stack`
+   !> Push a payload_t type, onto `stack` and return the new stack. If 
+   !> `payload` is the first item to be pushed onto the stack, then `stack`
    !> should be unassociated.
    !
    !-----------------------------------------------------------------------
@@ -145,8 +144,6 @@ module mpas_stack
       class(payload_t), intent(inout), target :: payload
 
       type(node), pointer :: new_stack
-      ! Allocate a new type(node) for the stack: new_stack
-      !  Point new_stack % payload => payload
 
       allocate(new_stack)
       new_stack % payload => payload
@@ -165,7 +162,9 @@ module mpas_stack
    !> \date    04/04/19
    !> \details
    !> Pop off and return the top item of the stack as a `class payload_t`.
-   !> If the stack is empty, then the returned an unassociated `class payload_t`.
+   !> If the stack is empty (or unassociated), then a null `class payload_t` 
+   !> pointer will be returned. `select type` will need to be used to retrieve
+   !> any extended members.
    !
    !-----------------------------------------------------------------------
    function mpas_stack_pop(stack) result(top)
@@ -199,7 +198,7 @@ module mpas_stack
    !> \details
    !>  Deallocate the entire stack. If free_payload is set to `.TRUE.` or if
    !>  absent then the payload will be deallocated. If not, then the payload will not
-   !>  be deallocated.
+   !>  be deallocated. Upon success, the stack will be unassociated.
    !  
    !-----------------------------------------------------------------------
    subroutine mpas_stack_free(stack, free_payload)
@@ -210,7 +209,7 @@ module mpas_stack
       logical, intent(in), optional :: free_payload
       logical :: fpl
 
-      type(node), pointer :: cur, prev
+      type(node), pointer :: cur
 
       if (present(free_payload)) then
          fpl = free_payload
@@ -239,7 +238,6 @@ module mpas_stack
    !>          defined type
    !> \author  Miles A. Curry 
    !> \date    04/04/19
-   !> 
    !
    !-----------------------------------------------------------------------
    ! function my_pop(stack) result(item)
@@ -273,4 +271,3 @@ module mpas_stack
    !    end select
 
 end module mpas_stack
-
