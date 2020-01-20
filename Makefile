@@ -1,5 +1,5 @@
 default:
-	@echo "Please provide a compiler name (llvm, gnu, intel, pgi, xi, nag)"
+	@echo "Please provide a compiler name (gnu, intel, pgi)"
 	exit 1
 
 gnu:
@@ -19,8 +19,8 @@ pgi:
 
 
 mpas_stack:
-	$(FC) -c mpas_stack.f90
-	$(FC) -o stack_test mpas_stack_test.f90 mpas_stack.o
+	$(FC) $(FFLAGS) -c mpas_stack.f90
+	$(FC) $(FFLAGS) -o stack_test mpas_stack_test.f90 mpas_stack.o
 
 clean:
 	rm -rf *.o *.mod stack_test
