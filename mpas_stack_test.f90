@@ -7,7 +7,7 @@ program mpas_stack_test
 
    type, extends(payload_t) :: my_item
       integer :: my_num
-      logical :: bool_flag = .FALSE.
+      logical :: bool_flag
    end type my_item
 
    type(node), pointer :: stack1 => null()
@@ -16,10 +16,8 @@ program mpas_stack_test
    class(my_item), pointer :: item
    class(payload_t), pointer :: top
 
-   logical, dimension(:), pointer :: bool_check_array
    integer, dimension(:), pointer :: int_check_array
-   integer :: i, j, n
-   integer :: ierr
+   integer :: i, n
 
    write(0,*) "Testing mpas_stack"
 
@@ -28,6 +26,13 @@ program mpas_stack_test
    !
    if (.not. mpas_stack_is_empty(stack1)) then
       write(0,*) "FAILED: Empty stack reported to be non-empty"
+   endif
+
+   item1 => null()
+   stack1 => mpas_stack_push(stack1, item1)
+   item => my_pop(stack1)
+   if (associated(item)) then
+       write(0,*) "FAILED: Item1 should have not been associated!"
    endif
 
    !
@@ -139,6 +144,11 @@ program mpas_stack_test
    call mpas_stack_free(stack1)
    if (associated(stack1)) then
       write(0,*) "FAILED: Stack1 was not freed successfully"
+   endif
+
+   ! Check too see if the stack is empty
+   if (.not. mpas_stack_is_empty(stack1)) then
+      write(0,*) "FAILED: Stack reported that it was not empty"
    endif
 
    ! Check to see if item1 and item2 are associated
@@ -256,6 +266,10 @@ program mpas_stack_test
       endif
    
       top => mpas_stack_pop(stack)
+      if (.not. associated(top)) then
+          top => null()
+          return
+      endif
       
       select type(top)
          type is(my_item)
