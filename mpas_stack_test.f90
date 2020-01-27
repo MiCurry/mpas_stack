@@ -1,20 +1,20 @@
 program mpas_stack_test
 
-   use mpas_stack, only : node, payload_t
+   use mpas_stack, only : mpas_stack_type, mpas_stack_payload_type
    use mpas_stack, only : mpas_stack_push, mpas_stack_pop, mpas_stack_is_empty, mpas_stack_free
 
    implicit none
 
-   type, extends(payload_t) :: my_item
+   type, extends(mpas_stack_payload_type) :: my_item
       integer :: my_num
       logical :: bool_flag
    end type my_item
 
-   type(node), pointer :: stack1 => null()
+   type(mpas_stack_type), pointer :: stack1 => null()
    class(my_item), pointer :: item1, item2
    class(my_item), dimension(:), pointer :: items
    class(my_item), pointer :: item
-   class(payload_t), pointer :: top
+   class(mpas_stack_payload_type), pointer :: top
 
    integer, dimension(:), pointer :: int_check_array
    integer :: i, n
@@ -247,17 +247,17 @@ program mpas_stack_test
 
    contains
 
-   ! My own function to pop off my node type
+   ! My own function to pop off my mpas_stack_type type
    function my_pop(stack) result(item)
 
-      use mpas_stack, only : node, payload_t, mpas_stack_pop
+      use mpas_stack, only : mpas_stack_type, mpas_stack_payload_type, mpas_stack_pop
 
       implicit none
 
-      type(node), intent(inout), pointer :: stack
+      type(mpas_stack_type), intent(inout), pointer :: stack
 
-      type(my_item), pointer :: item
-      class(payload_t), pointer :: top
+      class(my_item), pointer :: item
+      class(mpas_stack_payload_type), pointer :: top
 
       item => null()
       if (mpas_stack_is_empty(stack)) then

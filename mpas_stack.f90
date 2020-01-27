@@ -10,21 +10,21 @@ module mpas_stack
    public :: mpas_stack_pop
    public :: mpas_stack_free
 
-   public :: node, payload_t
+   public :: mpas_stack_type, mpas_stack_payload_type
 
-   type payload_t
-   end type payload_t
+   type mpas_stack_payload_type
+   end type mpas_stack_payload_type
 
-   type node
-      type (node), pointer :: next => null()
-      class (payload_t), pointer :: payload => null()
-   end type node
+   type mpas_stack_type
+      type (mpas_stack_type), pointer :: next => null()
+      class (mpas_stack_payload_type), pointer :: payload => null()
+   end type mpas_stack_type
 
    !***********************************************************************
    !
    !  module mpas_stack
    !
-   !> \brief   MPAS KD-Tree module
+   !> \brief   MPAS Stack module
    !> \author  Miles A. Curry 
    !> \date    04/04/19
    !> \details
@@ -38,29 +38,29 @@ module mpas_stack
    !>
    !> Creating a Stack
    !> ==================
-   !> The stack data structure (`type (node)`) is defined by a single `next` pointer
-   !> and a pointer to a `type (payload_t)`, which is defined as a empty derived type.
+   !> The stack data structure (`type (mpas_stack_type)`) is defined by a single `next` pointer
+   !> and a pointer to a `type (mpas_stack_payload_type)`, which is defined as a empty derived type.
    !>
-   !> To use the stack, create a derived that extends the `payload_t` type.  Define your
+   !> To use the stack, create a derived that extends the `mpas_stack_payload_type` type.  Define your
    !> extended derived type with members that meets your application.
    !>
    !> For instance:
    !> ```
-   !> type, extends(payload_t) :: my_payload_name
+   !> type, extends(mpas_stack_payload_type) :: my_payload_name
    !>    ! Define the members of your type as you wish
    !> end type my_payload_name
    !>
-   !> type (my_payload_name) :: item1, item2
+   !> class (my_payload_name) :: item1, item2
    !> ```
    !>
-   !> The extended payload_t define type will enable it to ride along with the stack.
+   !> The extended mpas_stack_payload_type define type will enable it to ride along with the stack.
    !> It will also enable you to push the same payload twice (if need-be).
    !>
    !> You will then need to create a stack (or multiple stacks if you desire) as
    !> the following:
    !>
    !> ```
-   !> type (node) :: stack1, stack2
+   !> type (mpas_stack_type) :: stack1, stack2
    !> ```
    !> 
    !>  Pushing onto a Stack
@@ -79,7 +79,7 @@ module mpas_stack
    !> object:
    !> ```
    !> ! The item to pop items into
-   !> class (payload_t), pointer :: top
+   !> class (mpas_stack_payload_type), pointer :: top
    !> type (my_payload_name), pointer :: my_item
    !> 
    !> top => mpas_stack_pop(stack1)
@@ -101,7 +101,7 @@ module mpas_stack
    !
    !  routine mpas_stack_is_empty
    !
-   !> \brief   Returns .TRUE. if the stack is empty, otherwise .FALSE.
+   !> \brief   Returns .true. if the stack is empty, otherwise .false.
    !> \author  Miles A. Curry 
    !> \date    04/04/19
    !> Returns .true. If the stack is empty and/or if the stack is unassociated.
@@ -110,16 +110,15 @@ module mpas_stack
    function mpas_stack_is_empty(stack) result(is_empty)
 
       implicit none
-      type (node), intent(in), pointer :: stack
+      type (mpas_stack_type), intent(in), pointer :: stack
       logical :: is_empty
 
-      is_empty = .TRUE.
+      is_empty = .true.
       if (associated(stack)) then
-         is_empty = .FALSE.
+         is_empty = .false.
          return
       endif
 
-      return
    end function mpas_stack_is_empty
 
    !***********************************************************************
@@ -131,7 +130,7 @@ module mpas_stack
    !> \date    04/04/19
    !> \details
    !>
-   !> Push a payload_t type, onto `stack` and return the new stack. If 
+   !> Push a mpas_stack_payload_type type, onto `stack` and return the new stack. If 
    !> `payload` is the first item to be pushed onto the stack, then `stack`
    !> should be unassociated.
    !
@@ -140,10 +139,10 @@ module mpas_stack
       
       implicit none
 
-      type(node), intent(inout), pointer :: stack
-      class(payload_t), intent(inout), target :: payload
+      type(mpas_stack_type), intent(inout), pointer :: stack
+      class(mpas_stack_payload_type), intent(inout), target :: payload
 
-      type(node), pointer :: new_stack
+      type(mpas_stack_type), pointer :: new_stack
 
       allocate(new_stack)
       new_stack % payload => payload
@@ -161,8 +160,8 @@ module mpas_stack
    !> \author  Miles A. Curry 
    !> \date    04/04/19
    !> \details
-   !> Pop off and return the top item of the stack as a `class payload_t`.
-   !> If the stack is empty (or unassociated), then a null `class payload_t` 
+   !> Pop off and return the top item of the stack as a `class mpas_stack_payload_type`.
+   !> If the stack is empty (or unassociated), then a null `class mpas_stack_payload_type` 
    !> pointer will be returned. `select type` will need to be used to retrieve
    !> any extended members.
    !
@@ -171,9 +170,9 @@ module mpas_stack
 
       implicit none
 
-      type (node), intent(inout), pointer :: stack
-      type (node), pointer :: next => null()
-      class(payload_t), pointer :: top
+      type (mpas_stack_type), intent(inout), pointer :: stack
+      type (mpas_stack_type), pointer :: next => null()
+      class(mpas_stack_payload_type), pointer :: top
 
       if ( .NOT. associated(stack)) then
          top => null()
@@ -196,7 +195,7 @@ module mpas_stack
    !> \author  Miles A. Curry 
    !> \date    04/04/19
    !> \details
-   !>  Deallocate the entire stack. If free_payload is set to `.TRUE.` or if
+   !>  Deallocate the entire stack. If free_payload is set to `.true.` or if
    !>  absent then the payload will be deallocated. If not, then the payload will not
    !>  be deallocated. Upon success, the stack will be unassociated.
    !  
@@ -205,16 +204,16 @@ module mpas_stack
 
       implicit none
 
-      type(node), intent(inout), pointer :: stack
+      type(mpas_stack_type), intent(inout), pointer :: stack
       logical, intent(in), optional :: free_payload
       logical :: fpl
 
-      type(node), pointer :: cur
+      type(mpas_stack_type), pointer :: cur
 
       if (present(free_payload)) then
          fpl = free_payload
       else
-         fpl = .TRUE.
+         fpl = .true.
       endif
 
       cur => stack
@@ -242,14 +241,16 @@ module mpas_stack
    !-----------------------------------------------------------------------
    ! function my_pop(stack) result(item)
    !
-   !    use mpas_stack, only : node, payload_t, mpas_stack_pop
+   !    use mpas_stack, only : mpas_stack_type, mpas_stack_payload_type, mpas_stack_pop
    !
    !    implicit none
    !
-   !    type(node), intent(inout), pointer :: stack
+   !    type(mpas_stack_type), intent(inout), pointer :: stack
    !
-   !    type(my_item), pointer :: item    ! Our user defined node
-   !    class(payload_t), pointer :: top  ! We will need to use the payload_t type to use mpas_stack_pop(...)
+   !    type(my_item), pointer :: item    ! Our user defined mpas_stack_type
+   !
+   !    ! We will need to use the mpas_stack_payload_type type to use mpas_stack_pop(...)
+   !    class(mpas_stack_payload_type), pointer :: top  
    !
    !    !
    !    ! Handle a pop on an empty stack if we want to here
